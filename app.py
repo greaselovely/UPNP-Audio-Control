@@ -1,3 +1,4 @@
+# app.py
 """
 HEOS Dashboard - Main Application
 Connects configuration, API, and stations modules to provide web interface
@@ -6,6 +7,7 @@ import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for, send_file
 import json
 import tempfile
+import io
 
 # Import configuration
 from config import setup_configuration, save_config, check_device_connection, get_device_info, discover_and_update_device_info
@@ -98,7 +100,7 @@ def power_off():
 @app.route("/manage_stations", methods=["GET"])
 def manage_stations():
     """Render station management page"""
-    return render_template("manage_stations.html", stations=station_manager.stations)
+    return render_template("manage_stations.html", stations=station_manager.stations, config=config)
 
 @app.route("/add_station", methods=["POST"])
 def add_station():
@@ -155,22 +157,19 @@ def remove_multiple_stations():
 def export_stations():
     """Export stations to JSON file for download"""
     try:
-        # Create a temporary file
-        with tempfile.NamedTemporaryFile(suffix='.json', delete=False) as tmp:
-            tmp_filename = tmp.name
-            # Write stations to the temp file
-            json.dump(station_manager.stations, tmp, indent=2)
-        
-        # Send the file to the client
+        data = json.dumps(station_manager.stations, indent=2)
+
         return send_file(
-            tmp_filename,
+            io.BytesIO(data.encode('utf-8')),
+            mimetype='application/json',
             as_attachment=True,
-            download_name="heos_stations.json",
-            mimetype="application/json"
+            download_name='stations.json'
         )
-    
+
     except Exception as e:
-        return jsonify({"success": False, "message": str(e)}), 500
+        print(f"[EXPORT ERROR] {e}")
+        return jsonify({"success": False, "message": str(e)})
+
 
 @app.route("/import_stations", methods=["POST"])
 def import_stations():

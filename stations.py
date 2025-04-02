@@ -32,19 +32,20 @@ class StationManager:
         try:
             if os.path.exists(self.stations_file):
                 with open(self.stations_file, 'rb') as f:
-                    self._stations = pickle.load(f)
+                    self._stations = json.load(f)
                     print(f"Loaded {len(self._stations)} stations from {self.stations_file}")
                     return self._stations
             else:
                 print(f"Stations file {self.stations_file} not found, using defaults")
                 self._stations = DEFAULT_STATIONS.copy()
-                self.save()
+                # Do NOT save immediately – wait for user action
         except Exception as e:
             print(f"Error loading stations: {e}")
             self._stations = DEFAULT_STATIONS.copy()
-        
+
         return self._stations
-    
+
+
     def save(self):
         """Save stations to file"""
         try:
@@ -151,7 +152,7 @@ if __name__ == "__main__":
     import sys
     
     if len(sys.argv) < 2:
-        stations_file = "stations.pkl"
+        stations_file = "stations.json"
     else:
         stations_file = sys.argv[1]
     

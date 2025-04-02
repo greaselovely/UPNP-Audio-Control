@@ -1,0 +1,14 @@
+app:
+  debug: true
+  host: 0.0.0.0
+  port: 5050
+  stations_file: stations.json
+device:
+  friendly_name: HEOS Device
+  ip: 10.29.60.78
+  manufacturer: Unknown
+  model: Unknown
+  port: 60006
+ui:
+  default_volume: 30
+  theme: dark

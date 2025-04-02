@@ -1,209 +1,110 @@
-<!-- HEOS Dashboard: templates/settings.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>HEOS Dashboard Settings</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --bg-color: #f8f9fa;
-            --text-color: #212529;
-            --card-bg: #ffffff;
-            --control-bg: #f8f9fa;
-            --border-color: #dee2e6;
-        }
-        
-        .dark-mode {
-            --bg-color: #121212;
-            --text-color: #e0e0e0;
-            --card-bg: #1e1e1e;
-            --control-bg: #2a2a2a;
-            --border-color: #444444;
-        }
-        
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            transition: background-color 0.3s, color 0.3s;
-        }
-        
-        .container {
-            max-width: 800px;
-            margin-top: 50px;
-        }
-        
-        .card {
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            background-color: var(--card-bg);
-            border-color: var(--border-color);
-            margin-bottom: 20px;
-        }
-        
-        .theme-toggle {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 1000;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1 class="mb-4 text-center">⚙️ HEOS Dashboard Settings</h1>
-        
-        <div class="card">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">Device Configuration</h4>
-            </div>
-            <div class="card-body">
-                <form id="deviceConfigForm" method="POST" action="/update_device_config">
-                    <div class="mb-3">
-                        <label for="deviceIp" class="form-label">Device IP Address</label>
-                        <input type="text" class="form-control" id="deviceIp" name="ip" value="{{ config.device.ip }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="devicePort" class="form-label">Device Port</label>
-                        <input type="number" class="form-control" id="devicePort" name="port" value="{{ config.device.port }}" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="deviceName" class="form-label">Device Name</label>
-                        <input type="text" class="form-control" id="deviceName" name="friendly_name" value="{{ config.device.friendly_name }}">
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <button type="button" id="testConnectionBtn" class="btn btn-secondary">Test Connection</button>
-                        <button type="submit" class="btn btn-primary">Save Device Settings</button>
-                    </div>
-                    <div id="connectionStatus" class="alert mt-3" style="display: none;"></div>
-                </form>
-            </div>
-        </div>
-        
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <h4 class="mb-0">Application Settings</h4>
-            </div>
-            <div class="card-body">
-                <form id="appConfigForm" method="POST" action="/update_app_config">
-                    <div class="mb-3">
-                        <label for="appPort" class="form-label">Application Port</label>
-                        <input type="number" class="form-control" id="appPort" name="port" value="{{ config.app.port }}">
-                        <div class="form-text">Requires application restart to take effect</div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="appHost" class="form-label">Application Host</label>
-                        <input type="text" class="form-control" id="appHost" name="host" value="{{ config.app.host }}">
-                        <div class="form-text">Requires application restart to take effect</div>
-                    </div>
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="appDebug" name="debug" {% if config.app.debug %}checked{% endif %}>
-                        <label class="form-check-label" for="appDebug">Debug Mode</label>
-                    </div>
-                    <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-success">Save App Settings</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h4 class="mb-0">UI Settings</h4>
-            </div>
-            <div class="card-body">
-                <form id="uiConfigForm" method="POST" action="/update_ui_config">
-                    <div class="mb-3">
-                        <label for="uiTheme" class="form-label">Default Theme</label>
-                        <select class="form-select" id="uiTheme" name="theme">
-                            <option value="light" {% if config.ui.theme == 'light' %}selected{% endif %}>Light</option>
-                            <option value="dark" {% if config.ui.theme == 'dark' %}selected{% endif %}>Dark</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="defaultVolume" class="form-label">Default Volume</label>
-                        <input type="range" class="form-range" id="defaultVolume" name="default_volume" min="0" max="100" value="{{ config.ui.default_volume }}" oninput="updateVolumeDisplay(this.value)">
-                        <div id="volumeDisplay" class="text-center">{{ config.ui.default_volume }}%</div>
-                    </div>
-                    <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-info">Save UI Settings</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        
-        <div class="d-flex justify-content-between mt-4">
-            <a href="/" class="btn btn-secondary">Back to Dashboard</a>
-            <button id="rediscoverBtn" class="btn btn-warning">Rediscover Device Info</button>
+{% extends 'base.html' %}
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4 text-center">⚙️ HEOS Dashboard Settings</h1>
+
+    <!-- Device Configuration -->
+    <div class="card mb-4">
+        <div class="card-header">Device Configuration</div>
+        <div class="card-body">
+            <form id="deviceConfigForm" method="POST" action="/update_device_config">
+                <div class="mb-3">
+                    <label for="deviceIp" class="form-label">Device IP Address</label>
+                    <input type="text" class="form-control" id="deviceIp" name="ip" value="{{ config.device.ip }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="devicePort" class="form-label">Device Port</label>
+                    <input type="number" class="form-control" id="devicePort" name="port" value="{{ config.device.port }}" required>
+                </div>
+                <div class="mb-3">
+                    <label for="deviceName" class="form-label">Device Name</label>
+                    <input type="text" class="form-control" id="deviceName" name="friendly_name" value="{{ config.device.friendly_name }}">
+                </div>
+                <div class="d-flex justify-content-between">
+                    <button type="button" id="testConnectionBtn" class="btn btn-secondary">Test Connection</button>
+                    <button type="submit" class="btn btn-primary">Save Device Settings</button>
+                </div>
+                <div id="connectionStatus" class="alert mt-3" style="display: none;"></div>
+            </form>
         </div>
     </div>
-    
-    <button id="themeToggle" class="btn theme-toggle btn-light">
-        <span id="themeIcon">🌙</span>
-    </button>
-    
-    <script>
-        // Function to update volume display
-        function updateVolumeDisplay(value) {
-            document.getElementById('volumeDisplay').textContent = value + '%';
-        }
-        
-        // Toggle dark/light mode
-        document.getElementById('themeToggle').addEventListener('click', function() {
-            document.body.classList.toggle('dark-mode');
-            const isDarkMode = document.body.classList.contains('dark-mode');
-            
-            // Update theme button
-            const themeToggle = document.getElementById('themeToggle');
-            const themeIcon = document.getElementById('themeIcon');
-            
-            if (isDarkMode) {
-                themeToggle.classList.remove('btn-light');
-                themeToggle.classList.add('btn-dark');
-                themeIcon.textContent = '☀️';
-                localStorage.setItem('theme', 'dark');
-            } else {
-                themeToggle.classList.remove('btn-dark');
-                themeToggle.classList.add('btn-light');
-                themeIcon.textContent = '🌙';
-                localStorage.setItem('theme', 'light');
-            }
-        });
-        
-        // Test connection button
-        document.getElementById('testConnectionBtn').addEventListener('click', function() {
-            const ipInput = document.getElementById('deviceIp');
-            const portInput = document.getElementById('devicePort');
-            const statusDiv = document.getElementById('connectionStatus');
-            
-            statusDiv.textContent = 'Testing connection...';
-            statusDiv.className = 'alert mt-3 alert-info';
-            statusDiv.style.display = 'block';
-            
-            fetch('/test_connection', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ 
-                    ip: ipInput.value,
-                    port: portInput.value
-                })
-            })
+
+    <!-- App Settings -->
+    <div class="card mb-4">
+        <div class="card-header">Application Settings</div>
+        <div class="card-body">
+            <form id="appConfigForm" method="POST" action="/update_app_config">
+                <div class="mb-3">
+                    <label for="appPort" class="form-label">Application Port</label>
+                    <input type="number" class="form-control" id="appPort" name="port" value="{{ config.app.port }}">
+                    <div class="form-text">Requires application restart to take effect</div>
+                </div>
+                <div class="mb-3">
+                    <label for="appHost" class="form-label">Application Host</label>
+                    <input type="text" class="form-control" id="appHost" name="host" value="{{ config.app.host }}">
+                    <div class="form-text">Requires application restart to take effect</div>
+                </div>
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="appDebug" name="debug" {% if config.app.debug %}checked{% endif %}>
+                    <label class="form-check-label" for="appDebug">Debug Mode</label>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-success">Save App Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- UI Settings -->
+    <div class="card mb-4">
+        <div class="card-header">UI Settings</div>
+        <div class="card-body">
+            <form id="uiConfigForm" method="POST" action="/update_ui_config">
+                <div class="mb-3">
+                    <label for="uiTheme" class="form-label">Default Theme</label>
+                    <select class="form-select" id="uiTheme" name="theme">
+                        <option value="light" {% if config.ui.theme == 'light' %}selected{% endif %}>Light</option>
+                        <option value="dark" {% if config.ui.theme == 'dark' %}selected{% endif %}>Dark</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="defaultVolume" class="form-label">Default Volume</label>
+                    <input type="range" class="form-range" id="defaultVolume" name="default_volume" min="0" max="100" value="{{ config.ui.default_volume }}" oninput="updateVolumeDisplay(this.value)">
+                    <div id="volumeDisplay" class="text-center">{{ config.ui.default_volume }}%</div>
+                </div>
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-info">Save UI Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between mt-4">
+        <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+        <button id="rediscoverBtn" class="btn btn-warning">Rediscover Device Info</button>
+    </div>
+</div>
+
+<script>
+    document.getElementById('testConnectionBtn').addEventListener('click', function () {
+        const ipInput = document.getElementById('deviceIp');
+        const portInput = document.getElementById('devicePort');
+        const statusDiv = document.getElementById('connectionStatus');
+
+        statusDiv.textContent = 'Testing connection...';
+        statusDiv.className = 'alert mt-3 alert-info';
+        statusDiv.style.display = 'block';
+
+        fetch('/test_connection', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ip: ipInput.value, port: portInput.value })
+        })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    statusDiv.textContent = 'Connection successful! ' + 
-                                          (data.device_info ? `Found device: ${data.device_info.friendly_name || 'Unknown'}` : '');
+                    statusDiv.textContent = 'Connection successful! ' +
+                        (data.device_info ? `Found device: ${data.device_info.friendly_name || 'Unknown'}` : '');
                     statusDiv.className = 'alert mt-3 alert-success';
                 } else {
                     statusDiv.textContent = 'Connection failed: ' + data.message;
@@ -214,14 +115,11 @@
                 statusDiv.textContent = 'Error testing connection: ' + error;
                 statusDiv.className = 'alert mt-3 alert-danger';
             });
-        });
-        
-        // Rediscover device info button
-        document.getElementById('rediscoverBtn').addEventListener('click', function() {
-            if (confirm('This will attempt to rediscover your device information. Continue?')) {
-                fetch('/rediscover_device', {
-                    method: 'POST'
-                })
+    });
+
+    document.getElementById('rediscoverBtn').addEventListener('click', function () {
+        if (confirm('This will attempt to rediscover your device information. Continue?')) {
+            fetch('/rediscover_device', { method: 'POST' })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -234,52 +132,7 @@
                 .catch(error => {
                     alert('Error: ' + error);
                 });
-            }
-        });
-        
-        // Handle form submissions without page navigation
-        document.addEventListener('DOMContentLoaded', function() {
-            // Attach to all forms
-            const forms = document.querySelectorAll('form');
-            
-            forms.forEach(form => {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    
-                    fetch(form.action, {
-                        method: form.method,
-                        body: new FormData(form)
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('Settings saved successfully!');
-                            if (data.reload) {
-                                location.reload();
-                            }
-                        } else {
-                            alert('Error saving settings: ' + data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred while saving settings');
-                    });
-                });
-            });
-            
-            // Check for saved theme preference
-            const savedTheme = localStorage.getItem('theme');
-            if (savedTheme === 'dark') {
-                document.body.classList.add('dark-mode');
-                const themeToggle = document.getElementById('themeToggle');
-                const themeIcon = document.getElementById('themeIcon');
-                themeToggle.classList.remove('btn-light');
-                themeToggle.classList.add('btn-dark');
-                themeIcon.textContent = '☀️';
-            }
-        });
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+        }
+    });
+</script>
+{% endblock %}

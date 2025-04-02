@@ -22,7 +22,7 @@ DEFAULT_CONFIG = {
         "port": 5050,
         "host": "0.0.0.0",
         "debug": True,
-        "stations_file": "custom_stations.pkl"
+        "stations_file": "stations.json"
     },
     "ui": {
         "theme": "light",
