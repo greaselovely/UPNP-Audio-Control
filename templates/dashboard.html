@@ -1,0 +1,311 @@
+<!-- HEOS Dashboard: templates/dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ device_name }} Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --card-bg: #ffffff;
+            --control-bg: #f8f9fa;
+            --border-color: #dee2e6;
+            --slider-bg: #ccc;
+            --slider-thumb: #0d6efd;
+        }
+        
+        .dark-mode {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --control-bg: #2a2a2a;
+            --border-color: #444444;
+            --slider-bg: #555;
+            --slider-thumb: #3a8eff;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .btn {
+            margin: 0 5px;
+        }
+        
+        .station-btn {
+            margin: 5px;
+        }
+        
+        .volume-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 10px;
+            width: 100%;
+        }
+        
+        .volume-display {
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .form-range {
+            height: 10px;
+            background-color: var(--slider-bg);
+            border-radius: 5px;
+        }
+        
+        .form-range::-webkit-slider-thumb {
+            background: var(--slider-thumb);
+        }
+        
+        .form-range::-moz-range-thumb {
+            background: var(--slider-thumb);
+        }
+        
+        .control-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background-color: var(--control-bg);
+            border: 1px solid var(--border-color);
+            height: 100%;
+        }
+        
+        .station-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .station-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .save-station-form {
+            margin-top: 15px;
+        }
+        
+        .card {
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+        }
+        
+        .list-group-item {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .settings-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        
+        .station-action-btn {
+            padding: 2px 6px;
+            font-size: 0.8rem;
+        }
+        
+        .device-model {
+            font-size: 0.9rem;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+        
+        .connection-status {
+            font-size: 0.9rem;
+            margin-left: 10px;
+        }
+        
+        .connection-online {
+            color: #28a745;
+        }
+        
+        .connection-offline {
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container py-5">
+    <h1 class="mb-4 text-center">
+        🎶 {{ device_name }} Control
+        <div class="device-model">{{ device_model }}</div>
+        <small class="connection-status connection-{{ connection_status }}">
+            {{ connection_status }}
+        </small>
+    </h1>
+    
+    <div class="row g-3">
+        <!-- Stations Section -->
+        <div class="col-md-8">
+            <div class="control-section h-100">
+                <div class="station-header">
+                    <h4 class="mb-3">Stations</h4>
+                    <a href="/manage_stations" class="btn btn-sm btn-primary">Manage Stations</a>
+                </div>
+                <div class="d-flex flex-wrap">
+                    {% for station in stations %}
+                        <div class="station-container me-2 mb-2">
+                            <form method="POST" action="/preset_play" class="d-inline">
+                                <input type="hidden" name="uri" value="{{ station.uri }}">
+                                <input type="hidden" name="name" value="{{ station.name }}">
+                                <button type="submit" class="btn btn-outline-primary station-btn">{{ station.name }}</button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="d-flex mt-4">
+                    <form method="POST" action="/play"><button class="btn btn-success">▶️</button></form>
+                    <form method="POST" action="/pause"><button class="btn btn-warning">⏸</button></form>
+                    <form method="POST" action="/stop"><button class="btn btn-danger">⏹</button></form>
+                    <form method="POST" action="/poweroff"><button class="btn btn-dark">⏻</button></form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Volume Section -->
+        <div class="col-md-4">
+            <div class="control-section h-100">
+                <h4 class="mb-3">Volume</h4>
+                <form method="POST" action="/setvolume" id="volumeForm">
+                    <div class="volume-container">
+                        <input type="range" class="form-range" id="volumeSlider" name="level" min="0" max="100" value="{{ current_volume }}" oninput="updateVolumeDisplay(this.value)">
+                        <div class="volume-display" id="volumeDisplay">{{ current_volume }}%</div>
+                    </div>
+                    <button type="submit" class="btn btn-info mt-2">Set Volume</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<button id="themeToggle" class="btn theme-toggle btn-light">
+    <span id="themeIcon">🌙</span>
+</button>
+
+<a href="/settings" class="btn settings-toggle btn-secondary">
+    <span>⚙️</span>
+</a>
+
+<script>
+function updateVolumeDisplay(value) {
+    document.getElementById('volumeDisplay').textContent = value + '%';
+}
+
+// Toggle dark/light mode
+document.getElementById('themeToggle').addEventListener('click', function() {
+    document.body.classList.toggle('dark-mode');
+    const isDarkMode = document.body.classList.contains('dark-mode');
+    
+    // Update theme button
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    
+    if (isDarkMode) {
+        themeToggle.classList.remove('btn-light');
+        themeToggle.classList.add('btn-dark');
+        themeIcon.textContent = '☀️';
+        localStorage.setItem('theme', 'dark');
+        
+        // Also update the config
+        fetch('/update_config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ui: { theme: 'dark' } })
+        });
+    } else {
+        themeToggle.classList.remove('btn-dark');
+        themeToggle.classList.add('btn-light');
+        themeIcon.textContent = '🌙';
+        localStorage.setItem('theme', 'light');
+        
+        // Also update the config
+        fetch('/update_config', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ ui: { theme: 'light' } })
+        });
+    }
+});
+
+// Function to handle form submissions without page navigation
+document.addEventListener('DOMContentLoaded', function() {
+    // Attach to all forms
+    const forms = document.querySelectorAll('form');
+    
+    forms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            fetch(form.action, {
+                method: form.method,
+                body: new FormData(form)
+            })
+            .then(response => response.text())
+            .then(html => {
+                document.open();
+                document.write(html);
+                document.close();
+                history.pushState({}, '', window.location.pathname);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    });
+    
+    // Check for saved theme preference
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        themeToggle.classList.remove('btn-light');
+        themeToggle.classList.add('btn-dark');
+        themeIcon.textContent = '☀️';
+    }
+});
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

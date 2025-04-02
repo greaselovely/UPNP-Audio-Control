@@ -1,0 +1,308 @@
+<!-- HEOS Dashboard: templates/manage_stations.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Manage Stations</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --text-color: #212529;
+            --card-bg: #ffffff;
+            --control-bg: #f8f9fa;
+            --border-color: #dee2e6;
+        }
+        
+        .dark-mode {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --card-bg: #1e1e1e;
+            --control-bg: #2a2a2a;
+            --border-color: #444444;
+        }
+        
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin-top: 50px;
+        }
+        
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background-color: var(--card-bg);
+            border-color: var(--border-color);
+        }
+        
+        .list-group-item {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            border-color: var(--border-color);
+        }
+        
+        .station-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .station-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .theme-toggle {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Manage Stations</h4>
+                <div>
+                    <button type="button" class="btn btn-danger" id="deleteSelectedBtn" disabled>Delete Selected</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    {% for station in stations %}
+                    <li class="list-group-item station-item">
+                        <div class="d-flex align-items-center">
+                            <input type="checkbox" class="station-checkbox form-check-input me-2" value="{{ station.name }}">
+                            <span>{{ station.name }}</span>
+                            <small class="text-muted ms-2">{{ station.uri }}</small>
+                        </div>
+                        <div class="station-actions">
+                            <form method="POST" action="/remove_station" class="single-delete">
+                                <input type="hidden" name="name" value="{{ station.name }}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                            </form>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">Add New Station</h4>
+            </div>
+            <div class="card-body">
+                <form id="addStationForm" method="POST" action="/add_station">
+                    <div class="mb-3">
+                        <label for="stationName" class="form-label">Station Name</label>
+                        <input type="text" class="form-control" id="stationName" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="stationUri" class="form-label">Stream URL</label>
+                        <input type="text" class="form-control" id="stationUri" name="uri" required>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="/" class="btn btn-secondary">Back to Dashboard</a>
+                        <button type="submit" class="btn btn-success">Add Station</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-info text-white">
+                <h4 class="mb-0">Import/Export</h4>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <a href="/export_stations" class="btn btn-outline-info">Export Stations</a>
+                    <button type="button" class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#importModal">Import Stations</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Modal -->
+    <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importModalLabel">Import Stations</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="importForm" method="POST" action="/import_stations" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="stationsFile" class="form-label">Select JSON File</label>
+                            <input type="file" class="form-control" id="stationsFile" name="file" accept=".json" required>
+                        </div>
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="checkbox" id="replaceStations" name="replace">
+                            <label class="form-check-label" for="replaceStations">
+                                Replace existing stations (if unchecked, stations will be merged)
+                            </label>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="document.getElementById('importForm').submit()">Import</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="themeToggle" class="btn theme-toggle btn-light">
+        <span id="themeIcon">🌙</span>
+    </button>
+    
+    <script>
+        // Check for saved theme preference
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.body.classList.add('dark-mode');
+                const themeToggle = document.getElementById('themeToggle');
+                const themeIcon = document.getElementById('themeIcon');
+                themeToggle.classList.remove('btn-light');
+                themeToggle.classList.add('btn-dark');
+                themeIcon.textContent = '☀️';
+            }
+            
+            // Handle checkbox selection
+            const checkboxes = document.querySelectorAll('.station-checkbox');
+            const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateDeleteButton);
+            });
+            
+            function updateDeleteButton() {
+                const selectedCount = document.querySelectorAll('.station-checkbox:checked').length;
+                deleteSelectedBtn.disabled = selectedCount === 0;
+                deleteSelectedBtn.textContent = `Delete Selected (${selectedCount})`;
+            }
+            
+            // Handle delete selected button
+            deleteSelectedBtn.addEventListener('click', function() {
+                const selected = [];
+                document.querySelectorAll('.station-checkbox:checked').forEach(cb => {
+                    selected.push(cb.value);
+                });
+                
+                if (selected.length === 0) {
+                    alert('Please select at least one station to delete');
+                    return;
+                }
+                
+                if (confirm(`Are you sure you want to delete ${selected.length} station(s)?`)) {
+                    fetch('/remove_multiple_stations', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ names: selected })
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            window.location.reload();
+                        } else {
+                            throw new Error('Failed to delete stations');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deleting stations');
+                    });
+                }
+            });
+            
+            // Handle form submissions without navigation
+            document.querySelectorAll('.single-delete').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    
+                    if (confirm('Are you sure you want to delete this station?')) {
+                        fetch(form.action, {
+                            method: form.method,
+                            body: new FormData(form)
+                        })
+                        .then(response => {
+                            window.location.reload();
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('An error occurred while deleting the station');
+                        });
+                    }
+                });
+            });
+            
+            // Handle add station form submission
+            document.getElementById('addStationForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const form = this;
+                const formData = new FormData(form);
+                
+                fetch(form.action, {
+                    method: form.method,
+                    body: formData
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert('Station added successfully!');
+                        window.location.reload();
+                    } else {
+                        throw new Error('Failed to add station');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while adding the station');
+                });
+            });
+            
+            // Toggle dark/light mode
+            document.getElementById('themeToggle').addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                
+                // Update theme button
+                const themeToggle = document.getElementById('themeToggle');
+                const themeIcon = document.getElementById('themeIcon');
+                
+                if (isDarkMode) {
+                    themeToggle.classList.remove('btn-light');
+                    themeToggle.classList.add('btn-dark');
+                    themeIcon.textContent = '☀️';
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    themeToggle.classList.remove('btn-dark');
+                    themeToggle.classList.add('btn-light');
+                    themeIcon.textContent = '🌙';
+                    localStorage.setItem('theme', 'light');
+                }
+            });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
