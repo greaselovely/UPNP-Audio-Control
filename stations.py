@@ -4,7 +4,6 @@ Station Management Module
 Handles loading, saving, and managing radio station presets
 """
 import os
-import pickle
 import json
 
 # Default preset stations that come with the application
@@ -31,7 +30,7 @@ class StationManager:
         """Load stations from file or use defaults if file doesn't exist"""
         try:
             if os.path.exists(self.stations_file):
-                with open(self.stations_file, 'rb') as f:
+                with open(self.stations_file, 'r') as f:
                     self._stations = json.load(f)
                     print(f"Loaded {len(self._stations)} stations from {self.stations_file}")
                     return self._stations
@@ -52,8 +51,8 @@ class StationManager:
             # Create directory if it doesn't exist
             os.makedirs(os.path.dirname(self.stations_file) or '.', exist_ok=True)
             
-            with open(self.stations_file, 'wb') as f:
-                pickle.dump(self._stations, f)
+            with open(self.stations_file, 'w') as f:
+                json.dump(self._stations, f)
             print(f"Saved {len(self._stations)} stations to {self.stations_file}")
             return True
         except Exception as e:

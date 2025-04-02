@@ -160,7 +160,6 @@ def export_stations():
         data = json.dumps(station_manager.stations, indent=2)
 
         return send_file(
-            io.BytesIO(data.encode('utf-8')),
             mimetype='application/json',
             as_attachment=True,
             download_name='stations.json'
@@ -169,7 +168,6 @@ def export_stations():
     except Exception as e:
         print(f"[EXPORT ERROR] {e}")
         return jsonify({"success": False, "message": str(e)})
-
 
 @app.route("/import_stations", methods=["POST"])
 def import_stations():
@@ -359,22 +357,28 @@ def test_connection():
 
 @app.route("/rediscover_device", methods=["POST"])
 def rediscover_device():
-    """Rediscover device information"""
     try:
-        # Get current device info
-        global config
-        
-        # Try to discover device information
         updated_config = discover_and_update_device_info(config)
-        
-        if updated_config != config:
-            config = updated_config
-            return jsonify({"success": True})
+
+        if updated_config == config:
+            return jsonify({
+                "success": True,
+                "message": "Device rediscovered. No changes were necessary."
+            })
         else:
-            return jsonify({"success": False, "message": "No new device information discovered"})
-    
+            config.update(updated_config)
+            save_config(config)
+            return jsonify({
+                "success": True,
+                "message": "Device information updated successfully!"
+            })
+
     except Exception as e:
-        return jsonify({"success": False, "message": str(e)})
+        return jsonify({
+            "success": False,
+            "message": f"Discovery failed: {str(e)}"
+        })
+
 
 # Run the application when executed directly
 if __name__ == "__main__":
