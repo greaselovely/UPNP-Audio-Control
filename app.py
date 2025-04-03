@@ -10,7 +10,7 @@ import tempfile
 import io
 
 # Import configuration
-from config import setup_configuration, save_config, check_device_connection, get_device_info, discover_and_update_device_info
+from config import setup_configuration, save_config, check_device_connection, update_config_from_heos
 
 # Import HEOS API
 from heos_api import HeosDevice
@@ -230,33 +230,29 @@ def settings():
 
 @app.route("/update_device_config", methods=["POST"])
 def update_device_config():
-    """Update device configuration"""
     try:
         ip = request.form.get("ip")
         port = request.form.get("port")
         friendly_name = request.form.get("friendly_name")
-        
+
         if not ip or not port:
             return jsonify({"success": False, "message": "IP and port are required"})
-        
-        # Update config
+
         config["device"]["ip"] = ip
         config["device"]["port"] = int(port)
         if friendly_name:
             config["device"]["friendly_name"] = friendly_name
-        
-        # Save config
+
         if save_config(config):
-            # Update device connection
             global device
             device = HeosDevice(ip, int(port))
-            
-            return jsonify({"success": True, "reload": True})
+            return jsonify({"success": True})  # ✅ This is the key fix
         else:
             return jsonify({"success": False, "message": "Failed to save configuration"})
-    
+
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
+
 
 @app.route("/update_app_config", methods=["POST"])
 def update_app_config():
@@ -343,7 +339,24 @@ def test_connection():
         # Check connection
         if temp_device.check_connection():
             # Try to get device info
-            device_info = get_device_info(ip, int(port))
+            from config import update_config_from_heos  # make sure this import is present
+
+            temp_config = {
+                "device": {
+                    "ip": ip,
+                    "port": int(port),
+                    "friendly_name": "",
+                    "model": "",
+                    "serial": "",
+                    "version": ""
+                },
+                "app": {},
+                "ui": {}
+            }
+
+            updated = update_config_from_heos(temp_config)
+            device_info = updated["device"]
+
             
             return jsonify({
                 "success": True, 
@@ -358,7 +371,7 @@ def test_connection():
 @app.route("/rediscover_device", methods=["POST"])
 def rediscover_device():
     try:
-        updated_config = discover_and_update_device_info(config)
+        updated_config = update_config_from_heos(config)
 
         if updated_config == config:
             return jsonify({

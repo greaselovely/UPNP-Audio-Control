@@ -7,7 +7,7 @@
     <div class="card mb-4">
         <div class="card-header">Device Configuration</div>
         <div class="card-body">
-            <form id="deviceConfigForm" method="POST" action="/update_device_config">
+            <form id="deviceConfigForm">
                 <div class="mb-3">
                     <label for="deviceIp" class="form-label">Device IP Address</label>
                     <input type="text" class="form-control" id="deviceIp" name="ip" value="{{ config.device.ip }}" required>
@@ -20,9 +20,10 @@
                     <label for="deviceName" class="form-label">Device Name</label>
                     <input type="text" class="form-control" id="deviceName" name="friendly_name" value="{{ config.device.friendly_name }}">
                 </div>
-                <div class="d-flex justify-content-between">
+                <div class="d-flex align-items-center gap-3">
                     <button type="button" id="testConnectionBtn" class="btn btn-secondary">Test Connection</button>
-                    <button type="submit" class="btn btn-primary">Save Device Settings</button>
+                    <button type="submit" class="btn btn-primary" id="saveDeviceBtn">Save Device Settings</button>
+                    <span id="deviceSaveSuccess" style="display:none; font-size: 1.5rem; margin-left: -10px;">👍</span>
                 </div>
                 <div id="connectionStatus" class="alert mt-3" style="display: none;"></div>
             </form>
@@ -33,7 +34,7 @@
     <div class="card mb-4">
         <div class="card-header">Application Settings</div>
         <div class="card-body">
-            <form id="appConfigForm" method="POST" action="/update_app_config">
+            <form id="appConfigForm">
                 <div class="mb-3">
                     <label for="appPort" class="form-label">Application Port</label>
                     <input type="number" class="form-control" id="appPort" name="port" value="{{ config.app.port }}">
@@ -48,8 +49,9 @@
                     <input type="checkbox" class="form-check-input" id="appDebug" name="debug" {% if config.app.debug %}checked{% endif %}>
                     <label class="form-check-label" for="appDebug">Debug Mode</label>
                 </div>
-                <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-success">Save App Settings</button>
+                <div class="d-flex align-items-center gap-3">
+                    <button type="submit" class="btn btn-primary">Save App Settings</button>
+                    <span id="appSaveSuccess" style="display:none; font-size: 1.5rem;">👍</span>
                 </div>
             </form>
         </div>
@@ -59,7 +61,7 @@
     <div class="card mb-4">
         <div class="card-header">UI Settings</div>
         <div class="card-body">
-            <form id="uiConfigForm" method="POST" action="/update_ui_config">
+            <form id="uiConfigForm">
                 <div class="mb-3">
                     <label for="uiTheme" class="form-label">Default Theme</label>
                     <select class="form-select" id="uiTheme" name="theme">
@@ -72,8 +74,9 @@
                     <input type="range" class="form-range" id="defaultVolume" name="default_volume" min="0" max="100" value="{{ config.ui.default_volume }}" oninput="updateVolumeDisplay(this.value)">
                     <div id="volumeDisplay" class="text-center">{{ config.ui.default_volume }}%</div>
                 </div>
-                <div class="d-flex justify-content-end">
-                    <button type="submit" class="btn btn-info">Save UI Settings</button>
+                <div class="d-flex align-items-center gap-3">
+                    <button type="submit" class="btn btn-primary">Save UI Settings</button>
+                    <span id="uiSaveSuccess" style="display:none; font-size: 1.5rem;">👍</span>
                 </div>
             </form>
         </div>
@@ -86,6 +89,66 @@
 </div>
 
 <script>
+    function updateVolumeDisplay(value) {
+        document.getElementById('volumeDisplay').textContent = value + '%';
+    }
+
+    function showThumbsUp(id) {
+        const icon = document.getElementById(id);
+        icon.style.display = 'inline';
+        setTimeout(() => { icon.style.display = 'none'; }, 5000);
+    }
+
+    document.getElementById('deviceConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        fetch('/update_device_config', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            }
+            return response.json().catch(() => null);
+        })
+        .then(data => {
+            if (data && data.success) {
+                showThumbsUp('deviceSaveSuccess');
+            }
+        });
+    });
+
+    document.getElementById('appConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        fetch('/update_app_config', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showThumbsUp('appSaveSuccess');
+            }
+        });
+    });
+
+    document.getElementById('uiConfigForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        fetch('/update_ui_config', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showThumbsUp('uiSaveSuccess');
+            }
+        });
+    });
+
     document.getElementById('testConnectionBtn').addEventListener('click', function () {
         const ipInput = document.getElementById('deviceIp');
         const portInput = document.getElementById('devicePort');
@@ -100,21 +163,21 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ip: ipInput.value, port: portInput.value })
         })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    statusDiv.textContent = 'Connection successful! ' +
-                        (data.device_info ? `Found device: ${data.device_info.friendly_name || 'Unknown'}` : '');
-                    statusDiv.className = 'alert mt-3 alert-success';
-                } else {
-                    statusDiv.textContent = 'Connection failed: ' + data.message;
-                    statusDiv.className = 'alert mt-3 alert-danger';
-                }
-            })
-            .catch(error => {
-                statusDiv.textContent = 'Error testing connection: ' + error;
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                statusDiv.textContent = 'Connection successful! ' +
+                    (data.device_info ? `Found device: ${data.device_info.friendly_name || 'Unknown'}` : '');
+                statusDiv.className = 'alert mt-3 alert-success';
+            } else {
+                statusDiv.textContent = 'Connection failed: ' + data.message;
                 statusDiv.className = 'alert mt-3 alert-danger';
-            });
+            }
+        })
+        .catch(error => {
+            statusDiv.textContent = 'Error testing connection: ' + error;
+            statusDiv.className = 'alert mt-3 alert-danger';
+        });
     });
 
     document.getElementById('rediscoverBtn').addEventListener('click', function () {
