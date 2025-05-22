@@ -9,7 +9,8 @@ import json
 # Default preset stations that come with the application
 DEFAULT_STATIONS = [
     {"name": "NPR", "uri": "https://npr-ice.streamguys1.com/live.mp3"},
-    {"name": "Classic FM", "uri": "http://media-ice.musicradio.com/ClassicFMMP3.m3u"}
+    {"name": "Classic FM", "uri": "http://media-ice.musicradio.com/ClassicFMMP3.m3u"},
+    {"name": "WNYC", "uri": "https://q2stream.wqxr.org/q2"}
 ]
 
 class StationManager:
